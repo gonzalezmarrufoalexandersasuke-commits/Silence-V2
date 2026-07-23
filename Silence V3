@@ -1,5 +1,5 @@
 -- ==========================================================
--- SCRIPT "SILENCE" (CORREGIDO CON SONIDO DE MOVIMIENTO Y DISPARO)
+-- SCRIPT "SILENCE" (BLOQUE VISIBLE RESTAURADO)
 -- ==========================================================
 
 local Players = game:GetService("Players")
@@ -29,7 +29,6 @@ Lighting.Ambient = Color3.fromRGB(150, 20, 200)
 Lighting.OutdoorAmbient = Color3.fromRGB(100, 0, 150)
 Lighting.ColorShift_Top = Color3.fromRGB(0, 0, 0)
 
--- Audio de fondo
 local sonidoFondo = Instance.new("Sound")
 sonidoFondo.SoundId = "rbxassetid://1868779360"
 sonidoFondo.Volume = 1
@@ -111,10 +110,13 @@ if puertaSpawn and puertaSpawn:IsA("Model") then
 end
 local posicionSpawn = puertaSpawn and puertaSpawn.CFrame or CFrame.new(0, 5, 0)
 
+-- PARTE VISIBLE
 local entidad = Instance.new("Part")
 entidad.Name = NOMBRE_ENTIDAD
 entidad.Size = TAMANO_ENTIDAD
-entidad.Transparency = 1
+entidad.Transparency = 0 -- Se cambia a 0 para que el bloque sea 100% visible
+entidad.Color = Color3.fromRGB(15, 15, 15) -- Color negro
+entidad.Material = Enum.Material.SmoothPlastic
 entidad.Anchored = true
 entidad.CanCollide = false
 entidad.CFrame = posicionSpawn * CFrame.new(0, 3, 0)
@@ -326,11 +328,9 @@ task.spawn(function()
     local pGui = localPlayer:WaitForChild("PlayerGui", 5)
 	local contenedorAudio = pGui or workspace.CurrentCamera
 
-    -- Primer sonido de advertencia
 	local sonidoAdvertencia1 = Instance.new("Sound")
 	sonidoAdvertencia1.SoundId = AUDIO_ADVERTENCIA; sonidoAdvertencia1.Volume = 3; sonidoAdvertencia1.Parent = contenedorAudio; sonidoAdvertencia1:Play()
 	
-    -- Segunda copia del sonido a los 1.5 segundos
     task.delay(1.5, function()
         if contenedorAudio then
             local sonidoAdvertencia2 = Instance.new("Sound")
@@ -342,7 +342,6 @@ task.spawn(function()
 
 	task.wait(3.5) 
 
-    -- Sonido de movimiento de la entidad
     local sonidoMovimiento = Instance.new("Sound")
     sonidoMovimiento.SoundId = AUDIO_MOVIMIENTO
     sonidoMovimiento.Volume = 3
@@ -350,7 +349,6 @@ task.spawn(function()
     sonidoMovimiento.Parent = contenedorAudio
     sonidoMovimiento:Play()
 
-    -- Recorrido de 2 pasadas
     for pasada = 1, 2 do
         if not entidad or not entidad.Parent then break end
 
