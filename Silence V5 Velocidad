@@ -1,5 +1,5 @@
 -- ==========================================================
--- SCRIPT "SILENCE" (MODO PERSECUCIÓN / VELOCIDAD SEEK)
+-- SCRIPT "SILENCE" (ALTA VELOCIDAD Y ROTACIÓN GLITCH)
 -- ==========================================================
 
 local Players = game:GetService("Players")
@@ -15,9 +15,9 @@ local NOMBRE_ENTIDAD = "Silence"
 local TEXTURA_ID = "rbxassetid://11498777949"
 local TAMANO_ENTIDAD = Vector3.new(12, 12, 0.2)
 
--- VELOCIDAD AJUSTADA A ESTILO SEEK (PERSECUCIÓN)
-local VELOCIDAD_ULTRA = 25 
-local PASO_TIEMPO = 0.03 
+-- VELOCIDAD RÁPIDA DE PERSECUCIÓN
+local VELOCIDAD_ULTRA = 110 
+local PASO_TIEMPO = 0.015 
 
 -- AUDIOS
 local AUDIO_ADVERTENCIA = "rbxassetid://130563172782113"
@@ -94,7 +94,7 @@ task.spawn(function()
 end)
 
 -- ==========================================================
--- PARTE 1: NÚCLEO, LUZ NEGRA Y GLITCH VISUAL
+-- PARTE 1: NÚCLEO, LUZ NEGRA Y GLITCH DE ROTACIÓN
 -- ==========================================================
 local currentRooms = workspace:FindFirstChild("CurrentRooms")
 if not currentRooms then
@@ -133,17 +133,16 @@ decalFrente.Texture = TEXTURA_ID; decalFrente.Face = Enum.NormalId.Front; decalF
 local decalAtras = Instance.new("Decal")
 decalAtras.Texture = TEXTURA_ID; decalAtras.Face = Enum.NormalId.Back; decalAtras.Parent = entidad
 
-print("[SISTEMA] Modo persecución activado para " .. NOMBRE_ENTIDAD)
+print("[SISTEMA] Entidad " .. NOMBRE_ENTIDAD .. " lista a alta velocidad.")
 
 local anguloGlitchY = 0
-local offsetGlitchVector = Vector3.new(0, 0, 0)
 
 _G.B35_Shared = {
     Entidad = entidad,
-    Angulo = 0,
-    Offset = Vector3.new(0,0,0)
+    Angulo = 0
 }
 
+-- ANIMACIÓN DE ROTACIÓN (SOLO ROTACIÓN)
 task.spawn(function()
 	while entidad and entidad.Parent do
 		task.wait(0.06)
@@ -161,17 +160,6 @@ task.spawn(function()
 		task.wait(0.07)
 		if not entidad.Parent then break end; anguloGlitchY = -8
         if _G.B35_Shared then _G.B35_Shared.Angulo = anguloGlitchY end
-	end
-end)
-
-task.spawn(function()
-	while task.wait(0.02) do
-		if not entidad or not entidad.Parent then break end
-		local offsetX = math.random(-2, 2)
-		local offsetY = math.random(-3, 3)
-		local offsetZ = math.random(-2, 3)
-		offsetGlitchVector = Vector3.new(offsetX, offsetY, offsetZ)
-		if _G.B35_Shared then _G.B35_Shared.Offset = offsetGlitchVector end
 	end
 end)
 
@@ -216,7 +204,7 @@ task.spawn(function()
 			if hum.Health <= 0 then continue end
 			if (entidad.Position - personaje.HumanoidRootPart.Position).Magnitude < 18 then
 				if escanearSeguridadArmario(personaje) then
-					-- El jugador está a salvo dentro del armario
+					-- Salvo en el armario
 				else
 					localPlayer:SetAttribute("AsesinadoPor" .. NOMBRE_ENTIDAD, true)
 					task.wait(0.01)
@@ -307,7 +295,7 @@ task.spawn(function()
 end)
 
 -- ==========================================================
--- PARTE 3: PERSECUCIÓN Y MOVIMIENTO
+-- PARTE 3: MOVIMIENTO RÁPIDO
 -- ==========================================================
 local function romperLucesDeHabitaciones()
     for _, sala in ipairs(currentRooms:GetChildren()) do
@@ -335,12 +323,12 @@ task.spawn(function()
         if contenedorAudio then
             local sonidoAdvertencia2 = Instance.new("Sound")
             sonidoAdvertencia2.SoundId = AUDIO_ADVERTENCIA; sonidoAdvertencia2.Volume = 3; sonidoAdvertencia2.Parent = contenedorAudio; sonidoAdvertencia2:Play()
-            task.wait(3.5)
+            task.wait(2)
             if sonidoAdvertencia2 then sonidoAdvertencia2:Destroy() end
         end
     end)
 
-	task.wait(3.5) 
+	task.wait(2.5) 
 
     local sonidoMovimiento = Instance.new("Sound")
     sonidoMovimiento.SoundId = AUDIO_MOVIMIENTO
@@ -364,17 +352,16 @@ task.spawn(function()
                 local distanciaRestante = vectorDireccion.Magnitude
                 local avancePorFotograma = VELOCIDAD_ULTRA * PASO_TIEMPO
                 
-                if distanciaRestante <= math.max(avancePorFotograma, 2.0) then break end
+                if distanciaRestante <= math.max(avancePorFotograma, 2.5) then break end
                 
                 local direccionNormalizada = vectorDireccion.Unit
                 local nuevaPosicion = posicionActual + (direccionNormalizada * avancePorFotograma)
                 
                 local anguloY = _G.B35_Shared and _G.B35_Shared.Angulo or 0
-                local offsetGlitch = _G.B35_Shared and _G.B35_Shared.Offset or Vector3.new(0,0,0)
                 
+                -- Se aplica únicamente la posición sin offset + la rotación glitch
                 entidad.CFrame = CFrame.lookAt(nuevaPosicion, nuevaPosicion + direccionNormalizada) 
-                                 * CFrame.Angles(0, math.rad(anguloY), 0) 
-                                 * CFrame.new(offsetGlitch)
+                                 * CFrame.Angles(0, math.rad(anguloY), 0)
                 
                 task.wait(PASO_TIEMPO)
             end
@@ -436,7 +423,7 @@ task.spawn(function()
             end
         end
         
-        task.wait(0.5)
+        task.wait(0.2)
     end
 
     romperLucesDeHabitaciones()
@@ -445,5 +432,5 @@ task.spawn(function()
     if sonidoAdvertencia1 then sonidoAdvertencia1:Destroy() end
     if entidad then entidad:Destroy() end
     _G.B35_Shared = nil
-    print("[SISTEMA] Persecución finalizada.")
+    print("[SISTEMA] Recorrido completado.")
 end)
