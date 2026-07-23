@@ -1,5 +1,5 @@
 -- ==========================================================
--- SCRIPT "SILENCE" (BLOQUE VISIBLE RESTAURADO)
+-- SCRIPT "SILENCE" (MODO PERSECUCIÓN / VELOCIDAD SEEK)
 -- ==========================================================
 
 local Players = game:GetService("Players")
@@ -15,8 +15,9 @@ local NOMBRE_ENTIDAD = "Silence"
 local TEXTURA_ID = "rbxassetid://11498777949"
 local TAMANO_ENTIDAD = Vector3.new(12, 12, 0.2)
 
-local VELOCIDAD_ULTRA = 430 
-local PASO_TIEMPO = 0.010 
+-- VELOCIDAD AJUSTADA A ESTILO SEEK (PERSECUCIÓN)
+local VELOCIDAD_ULTRA = 25 
+local PASO_TIEMPO = 0.03 
 
 -- AUDIOS
 local AUDIO_ADVERTENCIA = "rbxassetid://130563172782113"
@@ -110,12 +111,11 @@ if puertaSpawn and puertaSpawn:IsA("Model") then
 end
 local posicionSpawn = puertaSpawn and puertaSpawn.CFrame or CFrame.new(0, 5, 0)
 
--- PARTE VISIBLE
 local entidad = Instance.new("Part")
 entidad.Name = NOMBRE_ENTIDAD
 entidad.Size = TAMANO_ENTIDAD
-entidad.Transparency = 0 -- Se cambia a 0 para que el bloque sea 100% visible
-entidad.Color = Color3.fromRGB(15, 15, 15) -- Color negro
+entidad.Transparency = 0 
+entidad.Color = Color3.fromRGB(15, 15, 15) 
 entidad.Material = Enum.Material.SmoothPlastic
 entidad.Anchored = true
 entidad.CanCollide = false
@@ -133,7 +133,7 @@ decalFrente.Texture = TEXTURA_ID; decalFrente.Face = Enum.NormalId.Front; decalF
 local decalAtras = Instance.new("Decal")
 decalAtras.Texture = TEXTURA_ID; decalAtras.Face = Enum.NormalId.Back; decalAtras.Parent = entidad
 
-print("[SISTEMA] Núcleo de " .. NOMBRE_ENTIDAD .. " cargado correctamente.")
+print("[SISTEMA] Modo persecución activado para " .. NOMBRE_ENTIDAD)
 
 local anguloGlitchY = 0
 local offsetGlitchVector = Vector3.new(0, 0, 0)
@@ -214,9 +214,9 @@ task.spawn(function()
 		if personaje and personaje:FindFirstChild("HumanoidRootPart") and personaje:FindFirstChildOfClass("Humanoid") then
 			local hum = personaje:FindFirstChildOfClass("Humanoid")
 			if hum.Health <= 0 then continue end
-			if (entidad.Position - personaje.HumanoidRootPart.Position).Magnitude < 22 then
+			if (entidad.Position - personaje.HumanoidRootPart.Position).Magnitude < 18 then
 				if escanearSeguridadArmario(personaje) then
-					-- Ok
+					-- El jugador está a salvo dentro del armario
 				else
 					localPlayer:SetAttribute("AsesinadoPor" .. NOMBRE_ENTIDAD, true)
 					task.wait(0.01)
@@ -307,7 +307,7 @@ task.spawn(function()
 end)
 
 -- ==========================================================
--- PARTE 3: MOVIMIENTO (2 PASADAS) Y SONIDOS
+-- PARTE 3: PERSECUCIÓN Y MOVIMIENTO
 -- ==========================================================
 local function romperLucesDeHabitaciones()
     for _, sala in ipairs(currentRooms:GetChildren()) do
@@ -364,7 +364,7 @@ task.spawn(function()
                 local distanciaRestante = vectorDireccion.Magnitude
                 local avancePorFotograma = VELOCIDAD_ULTRA * PASO_TIEMPO
                 
-                if distanciaRestante <= math.max(avancePorFotograma, 3.5) then break end
+                if distanciaRestante <= math.max(avancePorFotograma, 2.0) then break end
                 
                 local direccionNormalizada = vectorDireccion.Unit
                 local nuevaPosicion = posicionActual + (direccionNormalizada * avancePorFotograma)
@@ -436,7 +436,7 @@ task.spawn(function()
             end
         end
         
-        task.wait(math.random(15, 28) * 0.1)
+        task.wait(0.5)
     end
 
     romperLucesDeHabitaciones()
@@ -445,5 +445,5 @@ task.spawn(function()
     if sonidoAdvertencia1 then sonidoAdvertencia1:Destroy() end
     if entidad then entidad:Destroy() end
     _G.B35_Shared = nil
-    print("[SISTEMA] " .. NOMBRE_ENTIDAD .. " completó el recorrido de 2 pasadas.")
+    print("[SISTEMA] Persecución finalizada.")
 end)
