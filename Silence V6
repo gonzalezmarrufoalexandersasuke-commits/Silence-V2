@@ -1,5 +1,5 @@
 -- ==========================================================
--- SCRIPT "SILENCE" (ALTA VELOCIDAD Y ROTACIÓN GLITCH)
+-- SCRIPT "SILENCE" (TEXTURA TRANSPARENTE FRENTE Y ATRÁS)
 -- ==========================================================
 
 local Players = game:GetService("Players")
@@ -12,11 +12,11 @@ local Camara = workspace.CurrentCamera
 
 -- CONFIGURACIÓN DE LA ENTIDAD "SILENCE"
 local NOMBRE_ENTIDAD = "Silence"
-local TEXTURA_ID = "rbxassetid://11498777949"
+local TEXTURA_ID = "rbxassetid://14168722837" -- TU NUEVA TEXTURA ID
 local TAMANO_ENTIDAD = Vector3.new(12, 12, 0.2)
 
 -- VELOCIDAD RÁPIDA DE PERSECUCIÓN
-local VELOCIDAD_ULTRA = 70 
+local VELOCIDAD_ULTRA = 55 
 local PASO_TIEMPO = 0.015 
 
 -- AUDIOS
@@ -94,7 +94,7 @@ task.spawn(function()
 end)
 
 -- ==========================================================
--- PARTE 1: NÚCLEO, LUZ NEGRA Y GLITCH DE ROTACIÓN
+-- PARTE 1: NÚCLEO, LUZ NEGRA Y TEXTURA (SIN BLOQUE NEGRO)
 -- ==========================================================
 local currentRooms = workspace:FindFirstChild("CurrentRooms")
 if not currentRooms then
@@ -111,12 +111,11 @@ if puertaSpawn and puertaSpawn:IsA("Model") then
 end
 local posicionSpawn = puertaSpawn and puertaSpawn.CFrame or CFrame.new(0, 5, 0)
 
+-- BLOQUE INVISIBLE (PARTE)
 local entidad = Instance.new("Part")
 entidad.Name = NOMBRE_ENTIDAD
 entidad.Size = TAMANO_ENTIDAD
-entidad.Transparency = 0 
-entidad.Color = Color3.fromRGB(15, 15, 15) 
-entidad.Material = Enum.Material.SmoothPlastic
+entidad.Transparency = 1 -- Transparente para que NO se vea el bloque negro
 entidad.Anchored = true
 entidad.CanCollide = false
 entidad.CFrame = posicionSpawn * CFrame.new(0, 3, 0)
@@ -128,12 +127,18 @@ luzNegra.Range = 25
 luzNegra.Brightness = 5
 luzNegra.Parent = entidad
 
+-- TEXTURAS ADELANTE Y ATRÁS
 local decalFrente = Instance.new("Decal")
-decalFrente.Texture = TEXTURA_ID; decalFrente.Face = Enum.NormalId.Front; decalFrente.Parent = entidad
-local decalAtras = Instance.new("Decal")
-decalAtras.Texture = TEXTURA_ID; decalAtras.Face = Enum.NormalId.Back; decalAtras.Parent = entidad
+decalFrente.Texture = TEXTURA_ID
+decalFrente.Face = Enum.NormalId.Front
+decalFrente.Parent = entidad
 
-print("[SISTEMA] Entidad " .. NOMBRE_ENTIDAD .. " lista a alta velocidad.")
+local decalAtras = Instance.new("Decal")
+decalAtras.Texture = TEXTURA_ID
+decalAtras.Face = Enum.NormalId.Back
+decalAtras.Parent = entidad
+
+print("[SISTEMA] Entidad " .. NOMBRE_ENTIDAD .. " lista con la nueva textura.")
 
 local anguloGlitchY = 0
 
@@ -142,7 +147,7 @@ _G.B35_Shared = {
     Angulo = 0
 }
 
--- ANIMACIÓN DE ROTACIÓN (SOLO ROTACIÓN)
+-- ANIMACIÓN DE ROTACIÓN
 task.spawn(function()
 	while entidad and entidad.Parent do
 		task.wait(0.06)
@@ -359,7 +364,6 @@ task.spawn(function()
                 
                 local anguloY = _G.B35_Shared and _G.B35_Shared.Angulo or 0
                 
-                -- Se aplica únicamente la posición sin offset + la rotación glitch
                 entidad.CFrame = CFrame.lookAt(nuevaPosicion, nuevaPosicion + direccionNormalizada) 
                                  * CFrame.Angles(0, math.rad(anguloY), 0)
                 
