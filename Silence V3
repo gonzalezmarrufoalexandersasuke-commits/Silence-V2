@@ -1,0 +1,446 @@
+-- ==========================================================
+-- SCRIPT "SILENCE" CON AMBIENTACIÓN Y 2 PASADAS
+-- ==========================================================
+
+local Players = game:GetService("Players")
+local CollectionService = game:GetService("CollectionService")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+
+local localPlayer = Players.LocalPlayer
+local Camara = workspace.CurrentCamera
+
+-- CONFIGURACIÓN DE LA ENTIDAD "SILENCE"
+local NOMBRE_ENTIDAD = "Silence"
+local TEXTURA_ID = "rbxassetid://11498777949"
+local TAMANO_ENTIDAD = Vector3.new(12, 12, 0.2)
+
+local VELOCIDAD_ULTRA = 430 
+local PASO_TIEMPO = 0.010 
+
+local AUDIO_ADVERTENCIA = "rbxassetid://130563172782113"
+local AUDIO_MOVIMIENTO_A = "rbxassetid://12971875415"
+local AUDIO_MOVIMIENTO_B = "rbxassetid://13218762091"
+
+-- ==========================================================
+-- EFECTOS AMBIENTALES, ILUMINACIÓN Y MUEBLES FLOTANTES
+-- ==========================================================
+Lighting.Ambient = Color3.fromRGB(150, 20, 200)
+Lighting.OutdoorAmbient = Color3.fromRGB(100, 0, 150)
+Lighting.ColorShift_Top = Color3.fromRGB(0, 0, 0)
+
+local sonidoFondo = Instance.new("Sound")
+sonidoFondo.SoundId = "rbxassetid://1868779360"
+sonidoFondo.Volume = 1
+sonidoFondo.Looped = true
+sonidoFondo.Parent = workspace
+sonidoFondo:Play()
+
+local palabrasClave = {
+	"clock", "reloj", "time", "watch",
+	"plant", "pot", "plantpot", "bush", "flower", "tree", "planta", "maceta", "flor",
+	"suitcase", "luggage", "bag", "baggage", "briefcase", "maleta", "equipaje", "bolso",
+	"cart", "trolley", "carriage", "carrito", "board", "plank", "tabla",
+	"book", "bookshelf", "shelf", "librero", "estante",
+	"table", "desk", "bench", "mesa", "escritorio",
+	"wardrobe", "closet", "cabinet", "drawer", "armario", "cajonera",
+	"bed", "cama"
+}
+
+local function esReloj(nombre)
+	local n = string.lower(nombre)
+	return string.find(n, "clock") or string.find(n, "reloj") or string.find(n, "watch")
+end
+
+local function esObjetoGeneral(nombre)
+	local nombreL = string.lower(nombre)
+	for _, palabra in ipairs(palabrasClave) do
+		if string.find(nombreL, palabra) then return true end
+	end
+	return false
+end
+
+task.spawn(function()
+	local personaje = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+	local torso = personaje:WaitForChild("HumanoidRootPart", 5)
+	if not torso then return end
+
+	for _, objeto in ipairs(workspace:GetDescendants()) do
+		if esReloj(objeto.Name) then
+			local posicionFrente = torso.CFrame * CFrame.new(0, 1, -4)
+			if objeto:IsA("Model") then
+				objeto:PivotTo(posicionFrente)
+			elseif objeto:IsA("BasePart") and not objeto:FindFirstAncestorOfClass("Model") then
+				objeto.CFrame = posicionFrente
+			end
+		elseif esObjetoGeneral(objeto.Name) then
+			local offsetX = math.random(-4, 4)
+			local offsetY = math.random(2, 5)
+			local offsetZ = math.random(-4, 4)
+			local rotX = math.rad(math.random(-20, 20))
+			local rotY = math.rad(math.random(0, 360))
+			local rotZ = math.rad(math.random(-20, 20))
+
+			local movimiento = CFrame.new(offsetX, offsetY, offsetZ) * CFrame.Angles(rotX, rotY, rotZ)
+
+			if objeto:IsA("Model") then
+				objeto:PivotTo(objeto:GetPivot() * movimiento)
+			elseif objeto:IsA("BasePart") and not objeto:FindFirstAncestorOfClass("Model") then
+				objeto.CFrame = objeto.CFrame * movimiento
+			end
+		end
+	end
+end)
+
+-- ==========================================================
+-- PARTE 1: NÚCLEO, LUZ NEGRA Y GLITCH VISUAL
+-- ==========================================================
+local currentRooms = workspace:FindFirstChild("CurrentRooms")
+if not currentRooms then
+    error("¡Error! No se encontró 'CurrentRooms'.")
+end
+
+local entidadPrevia = workspace:FindFirstChild(NOMBRE_ENTIDAD)
+if entidadPrevia then entidadPrevia:Destroy() end
+
+local sala1 = currentRooms:FindFirstChild("0") or currentRooms:FindFirstChild("1")
+local puertaSpawn = sala1 and (sala1:FindFirstChild("Door") or sala1:FindFirstChild("DoorPlatform"))
+if puertaSpawn and puertaSpawn:IsA("Model") then
+    puertaSpawn = puertaSpawn.PrimaryPart or puertaSpawn:FindFirstChild("Door") or puertaSpawn:FindFirstChildOfClass("BasePart")
+end
+local posicionSpawn = puertaSpawn and puertaSpawn.CFrame or CFrame.new(0, 5, 0)
+
+local entidad = Instance.new("Part")
+entidad.Name = NOMBRE_ENTIDAD
+entidad.Size = TAMANO_ENTIDAD
+entidad.Transparency = 1
+entidad.Anchored = true
+entidad.CanCollide = false
+entidad.CFrame = posicionSpawn * CFrame.new(0, 3, 0)
+entidad.Parent = workspace
+
+local luzNegra = Instance.new("PointLight")
+luzNegra.Color = Color3.fromRGB(0, 0, 0)
+luzNegra.Range = 25
+luzNegra.Brightness = 5
+luzNegra.Parent = entidad
+
+local decalFrente = Instance.new("Decal")
+decalFrente.Texture = TEXTURA_ID; decalFrente.Face = Enum.NormalId.Front; decalFrente.Parent = entidad
+local decalAtras = Instance.new("Decal")
+decalAtras.Texture = TEXTURA_ID; decalAtras.Face = Enum.NormalId.Back; decalAtras.Parent = entidad
+
+print("[SISTEMA] Núcleo de " .. NOMBRE_ENTIDAD .. " cargado correctamente.")
+
+local anguloGlitchY = 0
+local offsetGlitchVector = Vector3.new(0, 0, 0)
+
+_G.B35_Shared = {
+    Entidad = entidad,
+    Angulo = 0,
+    Offset = Vector3.new(0,0,0)
+}
+
+task.spawn(function()
+	while entidad and entidad.Parent do
+		task.wait(0.06)
+		if not entidad.Parent then break end; anguloGlitchY = -28
+		task.wait(0.1)
+		if not entidad.Parent then break end; anguloGlitchY = 42
+		task.wait(0.04)
+		if not entidad.Parent then break end; anguloGlitchY = -15
+		task.wait(0.09)
+		if not entidad.Parent then break end; anguloGlitchY = 35
+		task.wait(0.05)
+		if not entidad.Parent then break end; anguloGlitchY = -49
+		task.wait(0.12)
+		if not entidad.Parent then break end; anguloGlitchY = 22
+		task.wait(0.07)
+		if not entidad.Parent then break end; anguloGlitchY = -8
+        if _G.B35_Shared then _G.B35_Shared.Angulo = anguloGlitchY end
+	end
+end)
+
+task.spawn(function()
+	while task.wait(0.02) do
+		if not entidad or not entidad.Parent then break end
+		local offsetX = math.random(-2, 2)
+		local offsetY = math.random(-3, 3)
+		local offsetZ = math.random(-2, 3)
+		offsetGlitchVector = Vector3.new(offsetX, offsetY, offsetZ)
+		if _G.B35_Shared then _G.B35_Shared.Offset = offsetGlitchVector end
+	end
+end)
+
+local function escanearSeguridadArmario(personaje)
+	if not personaje then return false end
+	if personaje:GetAttribute("Hidden") == true or personaje:GetAttribute("IsHidden") == true or personaje:GetAttribute("Hiding") == true then return true end
+	local jugador = Players:GetPlayerFromCharacter(personaje)
+	if jugador and (jugador:GetAttribute("Hidden") == true or jugador:GetAttribute("IsHidden") == true) then return true end
+	local ancestro = personaje.Parent
+	while ancestro and ancestro ~= workspace do
+		local nL = ancestro.Name:lower()
+		if nL:find("closet") or nL:find("wardrobe") or nL:find("bed") or nL:find("hide") or nL:find("armario") then return true end
+		ancestro = ancestro.Parent
+	end
+	if personaje:FindFirstChild("InCloset") or personaje:FindFirstChild("Escondido") or personaje:FindFirstChild("HidingIn") or personaje:FindFirstChild("Hiding") then return true end
+	local rootPart = personaje:FindFirstChild("HumanoidRootPart")
+	local upperTorso = personaje:FindFirstChild("UpperTorso") or personaje:FindFirstChild("Torso")
+	if upperTorso and rootPart and upperTorso.Transparency >= 0.9 and rootPart.Transparency >= 0.9 then return true end
+	if rootPart then
+		for _, sala in ipairs(currentRooms:GetChildren()) do
+			local assets = sala:FindFirstChild("Assets") or sala
+			for _, obj in ipairs(assets:GetChildren()) do
+				local n = obj.Name:lower()
+				if n:find("closet") or n:find("wardrobe") or n:find("bed") then
+					local mainPart = obj.PrimaryPart or obj:FindFirstChild("Hitbox") or obj:FindFirstChild("Main")
+					if mainPart and mainPart:IsA("BasePart") then
+						if (rootPart.Position - mainPart.Position).Magnitude < 4.5 then return true end
+					end
+				end
+			end
+		end
+	end
+	return false
+end
+
+task.spawn(function()
+	while task.wait(0.03) do
+		if not entidad or not entidad.Parent then break end
+		local personaje = localPlayer.Character
+		if personaje and personaje:FindFirstChild("HumanoidRootPart") and personaje:FindFirstChildOfClass("Humanoid") then
+			local hum = personaje:FindFirstChildOfClass("Humanoid")
+			if hum.Health <= 0 then continue end
+			if (entidad.Position - personaje.HumanoidRootPart.Position).Magnitude < 22 then
+				if escanearSeguridadArmario(personaje) then
+					-- Ok
+				else
+					localPlayer:SetAttribute("AsesinadoPor" .. NOMBRE_ENTIDAD, true)
+					task.wait(0.01)
+					hum.Health = 0
+				end
+			end
+		end
+	end
+end)
+
+-- ==========================================================
+-- PARTE 2: PARTÍCULAS Y TEMBLOR
+-- ==========================================================
+local function generarParticulasGlitchEnSala(sala)
+    if not sala or not entidad or not entidad.Parent then return end
+    local centroSala = sala:FindFirstChild("RoomStart") or sala:FindFirstChild("Floor") or sala:FindFirstChild("PrimaryPart")
+    if not centroSala or not centroSala:IsA("BasePart") then return end
+    
+    for i = 1, math.random(12, 18) do
+        local offsetAleatorio = Vector3.new(math.random(-25, 25), math.random(0, 10), math.random(-25, 25))
+        local contenedorParticulas = Instance.new("Part")
+        contenedorParticulas.Size = Vector3.new(1, 1, 1)
+        contenedorParticulas.Transparency = 1
+        contenedorParticulas.Anchored = true
+        contenedorParticulas.CanCollide = false
+        contenedorParticulas.Position = centroSala.Position + offsetAleatorio
+        contenedorParticulas.Parent = workspace
+        CollectionService:AddTag(contenedorParticulas, "BasuraEstela")
+        
+        local emisorCirculos = Instance.new("ParticleEmitter")
+        emisorCirculos.Texture = "rbxassetid://6079375253" 
+        emisorCirculos.Color = ColorSequence.new(Color3.fromRGB(0, 170, 255))
+        emisorCirculos.Size = NumberSequence.new({NumberKeypoint.new(0, 0.4), NumberKeypoint.new(1, 0)})
+        emisorCirculos.Rate = 350 
+        emisorCirculos.Speed = NumberRange.new(8, 25)
+        emisorCirculos.Lifetime = NumberRange.new(0.5, 1.2)
+        emisorCirculos.SpreadAngle = Vector2.new(360, 360)
+        emisorCirculos.Parent = contenedorParticulas
+        
+        local emisorCuadrados = Instance.new("ParticleEmitter")
+        emisorCuadrados.Texture = "rbxassetid://258129505" 
+        emisorCuadrados.Color = ColorSequence.new(Color3.fromRGB(0, 85, 255))
+        emisorCuadrados.Size = NumberSequence.new({NumberKeypoint.new(0, 0.5), NumberKeypoint.new(1, 0)})
+        emisorCuadrados.Rate = 350 
+        emisorCuadrados.Speed = NumberRange.new(8, 28)
+        emisorCuadrados.Lifetime = NumberRange.new(0.4, 1.1)
+        emisorCuadrados.SpreadAngle = Vector2.new(360, 360)
+        emisorCuadrados.Parent = contenedorParticulas
+        
+        task.delay(0.35, function()
+            if emisorCirculos then emisorCirculos.Enabled = false end
+            if emisorCuadrados then emisorCuadrados.Enabled = false end
+            task.wait(1.5)
+            if contenedorParticulas then contenedorParticulas:Destroy() end
+        end)
+    end
+end
+
+_G.B35_Shared.SoltarParticulas = generarParticulasGlitchEnSala
+
+local conexionTemblor = RunService.RenderStepped:Connect(function()
+    if not entidad or not entidad.Parent then return end
+    local personaje = localPlayer.Character
+    if personaje and personaje:FindFirstChild("HumanoidRootPart") then
+        local distancia = (entidad.Position - personaje.HumanoidRootPart.Position).Magnitude
+        if distancia < 150 then
+            local fuerzaEfectiva = math.clamp((150 - distancia) / 35, 0.2, 1.5)
+            
+            local offsetAleatorio = Vector3.new(
+                math.random(-50, 50) * 0.007 * fuerzaEfectiva,
+                math.random(-50, 50) * 0.007 * fuerzaEfectiva,
+                math.random(-50, 50) * 0.007 * fuerzaEfectiva
+            )
+            local anguloAleatorio = CFrame.Angles(
+                math.rad(math.random(-25, 25) * 0.015 * fuerzaEfectiva),
+                math.rad(math.random(-25, 25) * 0.015 * fuerzaEfectiva),
+                math.rad(math.random(-25, 25) * 0.015 * fuerzaEfectiva)
+            )
+            
+            Camara.CFrame = Camara:GetRenderCFrame() * CFrame.new(offsetAleatorio) * anguloAleatorio
+        end
+    end
+end)
+
+task.spawn(function()
+    while entidad and entidad.Parent do task.wait(0.2) end
+    if conexionTemblor then conexionTemblor:Disconnect() end
+end)
+
+-- ==========================================================
+-- PARTE 3: MOVIMIENTO (2 PASADAS) Y AUDIO
+-- ==========================================================
+local function romperLucesDeHabitaciones()
+    for _, sala in ipairs(currentRooms:GetChildren()) do
+        if tonumber(sala.Name) then
+            for _, objeto in ipairs(sala:GetDescendants()) do
+                if objeto:IsA("Light") or objeto:IsA("PointLight") or objeto:IsA("SpotLight") or objeto:IsA("SurfaceLight") then
+                    objeto.Enabled = false 
+                elseif objeto:IsA("BasePart") and (objeto.Name:lower():find("light") or objeto.Name:lower():find("glass") or objeto.Name:lower():find("foco")) then
+                    objeto.Material = Enum.Material.Plastic 
+                    objeto.Color = Color3.fromRGB(40, 40, 40) 
+                end
+            end
+        end
+    end
+end
+
+task.spawn(function()
+    local pGui = localPlayer:WaitForChild("PlayerGui", 5)
+	local contenedorAudio = pGui or workspace.CurrentCamera
+
+	local sonidoAdvertencia1 = Instance.new("Sound")
+	sonidoAdvertencia1.SoundId = AUDIO_ADVERTENCIA; sonidoAdvertencia1.Volume = 3; sonidoAdvertencia1.Parent = contenedorAudio; sonidoAdvertencia1:Play()
+	
+    task.delay(1.5, function()
+        if contenedorAudio then
+            local sonidoAdvertencia2 = Instance.new("Sound")
+            sonidoAdvertencia2.SoundId = AUDIO_ADVERTENCIA; sonidoAdvertencia2.Volume = 3; sonidoAdvertencia2.Parent = contenedorAudio; sonidoAdvertencia2:Play()
+            task.wait(3.5)
+            if sonidoAdvertencia2 then sonidoAdvertencia2:Destroy() end
+        end
+    end)
+
+	task.wait(3.5) 
+
+    local soundA = Instance.new("Sound")
+    soundA.SoundId = AUDIO_MOVIMIENTO_A; soundA.Volume = 3; soundA.Looped = true; soundA.Parent = contenedorAudio; soundA:Play()
+    
+    local soundB = Instance.new("Sound")
+    soundB.SoundId = AUDIO_MOVIMIENTO_B; soundB.Volume = 3; soundB.Looped = true; soundB.Parent = contenedorAudio; soundB:Play()
+
+    -- BUCLE CONFIGURADO EN 2 PASADAS SOLAMENTE
+    for pasada = 1, 2 do
+        if not entidad or not entidad.Parent then break end
+
+        local function moverFisicamenteHacia(posicionDestino, esPuerta)
+            local destinoAjustado = posicionDestino
+            if not esPuerta then
+                destinoAjustado = posicionDestino + Vector3.new(0, 3, 0)
+            end
+            
+            while entidad and entidad.Parent do
+                local posicionActual = entidad.Position
+                local vectorDireccion = destinoAjustado - posicionActual
+                local distanciaRestante = vectorDireccion.Magnitude
+                local avancePorFotograma = VELOCIDAD_ULTRA * PASO_TIEMPO
+                
+                if distanciaRestante <= math.max(avancePorFotograma, 3.5) then break end
+                
+                local direccionNormalizada = vectorDireccion.Unit
+                local nuevaPosicion = posicionActual + (direccionNormalizada * avancePorFotograma)
+                
+                local anguloY = _G.B35_Shared and _G.B35_Shared.Angulo or 0
+                local offsetGlitch = _G.B35_Shared and _G.B35_Shared.Offset or Vector3.new(0,0,0)
+                
+                entidad.CFrame = CFrame.lookAt(nuevaPosicion, nuevaPosicion + direccionNormalizada) 
+                                 * CFrame.Angles(0, math.rad(anguloY), 0) 
+                                 * CFrame.new(offsetGlitch)
+                
+                task.wait(PASO_TIEMPO)
+            end
+        end
+
+        local salas = {}
+        for _, obj in ipairs(currentRooms:GetChildren()) do
+            if tonumber(obj.Name) then table.insert(salas, obj) end
+        end
+        
+        if pasada % 2 == 1 then
+            table.sort(salas, function(a, b) return tonumber(a.Name) < tonumber(b.Name) end)
+        else
+            table.sort(salas, function(a, b) return tonumber(a.Name) > tonumber(b.Name) end)
+        end
+        
+        for _, sala in ipairs(salas) do
+            if not entidad or not entidad.Parent then break end
+            
+            if _G.B35_Shared and _G.B35_Shared.SoltarParticulas then
+                _G.B35_Shared.SoltarParticulas(sala)
+            end
+            
+            local rutaInterna = sala:FindFirstChild("Waypoints") or sala:FindFirstChild("Nodes") or sala:FindFirstChild("Path") or sala:FindFirstChild("Ruta")
+            local nodosExistentes = {}
+            
+            if rutaInterna then
+                for _, nodo in ipairs(rutaInterna:GetChildren()) do 
+                    if nodo:IsA("BasePart") then 
+                        table.insert(nodosExistentes, nodo) 
+                    end 
+                end
+                
+                table.sort(nodosExistentes, function(a, b)
+                    local distA = (entidad.Position - a.Position).Magnitude
+                    local distB = (entidad.Position - b.Position).Magnitude
+                    
+                    if pasada % 2 == 1 then
+                        return distA < distB
+                    else
+                        return distA > distB
+                    end
+                end)
+            end
+            
+            if #nodosExistentes > 0 then
+                for _, nodo in ipairs(nodosExistentes) do 
+                    moverFisicamenteHacia(nodo.Position, false) 
+                end
+            else
+                local centroSala = sala:FindFirstChild("RoomStart") or sala:FindFirstChild("Floor") or sala:FindFirstChild("PrimaryPart")
+                if centroSala and centroSala:IsA("BasePart") then moverFisicamenteHacia(centroSala.Position, false) end
+            end
+            
+            local nodoPuerta = sala:FindFirstChild("Door") or sala:FindFirstChild("DoorPlatform")
+            if nodoPuerta then
+                if nodoPuerta:IsA("Model") then nodoPuerta = nodoPuerta.PrimaryPart or nodoPuerta:FindFirstChild("Door") or nodoPuerta:FindFirstChildOfClass("BasePart") end
+                if nodoPuerta then moverFisicamenteHacia(nodoPuerta.Position, true) end
+            end
+        end
+        
+        task.wait(math.random(15, 28) * 0.1)
+    end
+
+    romperLucesDeHabitaciones()
+
+    soundA:Destroy(); soundB:Destroy()
+    if sonidoAdvertencia1 then sonidoAdvertencia1:Destroy() end
+    if entidad then entidad:Destroy() end
+    _G.B35_Shared = nil
+    print("[SISTEMA] " .. NOMBRE_ENTIDAD .. " completó el recorrido de 2 pasadas.")
+end)
