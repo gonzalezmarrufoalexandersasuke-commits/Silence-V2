@@ -1,5 +1,5 @@
 -- ==========================================================
--- SCRIPT "SILENCE" CON AMBIENTACIÓN Y 2 PASADAS
+-- SCRIPT "SILENCE" (LIMPIEZA DE AUDIOS COMPLETADA)
 -- ==========================================================
 
 local Players = game:GetService("Players")
@@ -18,9 +18,8 @@ local TAMANO_ENTIDAD = Vector3.new(12, 12, 0.2)
 local VELOCIDAD_ULTRA = 430 
 local PASO_TIEMPO = 0.010 
 
+-- UNICO AUDIO DE ADVERTENCIA NUEVO
 local AUDIO_ADVERTENCIA = "rbxassetid://130563172782113"
-local AUDIO_MOVIMIENTO_A = "rbxassetid://12971875415"
-local AUDIO_MOVIMIENTO_B = "rbxassetid://13218762091"
 
 -- ==========================================================
 -- EFECTOS AMBIENTALES, ILUMINACIÓN Y MUEBLES FLOTANTES
@@ -29,6 +28,7 @@ Lighting.Ambient = Color3.fromRGB(150, 20, 200)
 Lighting.OutdoorAmbient = Color3.fromRGB(100, 0, 150)
 Lighting.ColorShift_Top = Color3.fromRGB(0, 0, 0)
 
+-- AUDIO DE FONDO NUEVO
 local sonidoFondo = Instance.new("Sound")
 sonidoFondo.SoundId = "rbxassetid://1868779360"
 sonidoFondo.Volume = 1
@@ -304,7 +304,7 @@ task.spawn(function()
 end)
 
 -- ==========================================================
--- PARTE 3: MOVIMIENTO (2 PASADAS) Y AUDIO
+-- PARTE 3: MOVIMIENTO (2 PASADAS)
 -- ==========================================================
 local function romperLucesDeHabitaciones()
     for _, sala in ipairs(currentRooms:GetChildren()) do
@@ -325,9 +325,11 @@ task.spawn(function()
     local pGui = localPlayer:WaitForChild("PlayerGui", 5)
 	local contenedorAudio = pGui or workspace.CurrentCamera
 
+    -- Primer sonido de advertencia
 	local sonidoAdvertencia1 = Instance.new("Sound")
 	sonidoAdvertencia1.SoundId = AUDIO_ADVERTENCIA; sonidoAdvertencia1.Volume = 3; sonidoAdvertencia1.Parent = contenedorAudio; sonidoAdvertencia1:Play()
 	
+    -- Segunda copia del sonido a los 1.5 segundos
     task.delay(1.5, function()
         if contenedorAudio then
             local sonidoAdvertencia2 = Instance.new("Sound")
@@ -339,13 +341,7 @@ task.spawn(function()
 
 	task.wait(3.5) 
 
-    local soundA = Instance.new("Sound")
-    soundA.SoundId = AUDIO_MOVIMIENTO_A; soundA.Volume = 3; soundA.Looped = true; soundA.Parent = contenedorAudio; soundA:Play()
-    
-    local soundB = Instance.new("Sound")
-    soundB.SoundId = AUDIO_MOVIMIENTO_B; soundB.Volume = 3; soundB.Looped = true; soundB.Parent = contenedorAudio; soundB:Play()
-
-    -- BUCLE CONFIGURADO EN 2 PASADAS SOLAMENTE
+    -- Recorrido de 2 pasadas
     for pasada = 1, 2 do
         if not entidad or not entidad.Parent then break end
 
@@ -438,9 +434,8 @@ task.spawn(function()
 
     romperLucesDeHabitaciones()
 
-    soundA:Destroy(); soundB:Destroy()
     if sonidoAdvertencia1 then sonidoAdvertencia1:Destroy() end
     if entidad then entidad:Destroy() end
     _G.B35_Shared = nil
-    print("[SISTEMA] " .. NOMBRE_ENTIDAD .. " completó el recorrido de 2 pasadas.")
+    print("[SISTEMA] " .. NOMBRE_ENTIDAD .. " completó el recorrido de 2 pasadas limpiamente.")
 end)
